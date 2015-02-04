@@ -1,11 +1,10 @@
-config          = require '../config/config'
-View            = require '../core/view'
-Queue           = require '../collections/queue'
-Loadable        = require '../utils/loadable'
-Entries         = require '../collections/entries'
-Tags            = require '../collections/tags'
-
-frameTemplate   = require '../templates/feed'
+config = require '../config/config'
+View = require '../core/view'
+Queue = require '../collections/queue'
+Loadable = require '../utils/loadable'
+Entries = require '../collections/entries'
+Tags = require '../collections/tags'
+frameTemplate = require '../templates/feed'
 entriesTemplate = require '../templates/feed_entries'
 
 module.exports = class FeedView extends View
@@ -30,40 +29,42 @@ module.exports = class FeedView extends View
 
   initialize: ->
     @tags = new Tags
-    @tags.fetch success: => @setupEntries()
-
-  setupEntries: =>
     @entries = new Entries
 
     @listenTo @entries, 'sync', @renderFrame
     @listenTo @entries, 'sync', @loadingDone
+    @listenToOnce @tags, 'sync', @fetchEntries
 
-    @entries.fetch()
+    @tags.fetch()
 
-  renderFrame: =>
+  fetchEntries: ->
+    @entries.fetch(reset: true)
+
+  play: ->
+    @interval = setInterval @runAnimation, @slideDuration
+
+  renderFrame: ->
     @$el.html @frameTemplate tags: @tags
     @renderEntries()
     @setElementCaches()
-
-    @interval = setInterval @runAnimation, @slideDuration
-
-    this
+    @play()
 
   renderEntries: ->
     @$('#screen__entries').html @entriesTemplate entries: @entries
 
   onAnimationComplete: =>
-    _.delay => @renderEntries() if @entries.length
+    if @entries.length
+      _.defer => @renderEntries()
 
   maybeShowHolder: =>
     @entries.shift()
-    @transitionToHoldingPage() if not @entries.length
+    @transitionToHoldingPage() unless @entries.length
 
   transitionToHoldingPage: ->
     clearInterval @interval
     @$('#holding').velocity {opacity: 1}, {display: 'block', duration: @animationDuration}
     @$('.holding-inner').velocity {top: '740px'}, {delay: @animationDuration, duration: @animationDuration}
-    setTimeout @setupEntries, @slideDuration
+    setTimeout @fetchEntries, @slideDuration
 
   runAnimation: =>
     # get the size of the top element so we can move it offscreen

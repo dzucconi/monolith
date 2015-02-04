@@ -1,10 +1,12 @@
-Collection      = require '../core/collection'
-Action          = require '../models/action'
-actionTemplate  = -> require('../templates/map/action') arguments...
+Collection = require '../core/collection'
+Action = require '../models/action'
+actionTemplate = -> require('../templates/map/action') arguments...
 
 module.exports = class Queue extends Collection
   model: Action
   comparator: 'created_at'
+
+  actionTemplate: actionTemplate
 
   defaults:
     insertIndex: 2
@@ -18,9 +20,9 @@ module.exports = class Queue extends Collection
     super
 
   guardedRender: (actions) ->
-    _.map actions, (action) ->
+    _.map actions, (action) =>
       unless action.get 'rendered'
-        html = actionTemplate action: action
+        html = @actionTemplate action: action
         action.set fragment: html, rendered: true
       action
 

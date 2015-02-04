@@ -1,40 +1,40 @@
-benv          = require 'benv'
-feedResponse  = require '../fixtures/feed'
+_ = require 'underscore'
+benv = require 'benv'
+feedResponse = require '../fixtures/feed'
 
 describe 'Queue', ->
-  beforeEach (done) ->
-    benv.setup ->
+  before (done) ->
+    benv.setup =>
       benv.expose
         $: benv.require 'jquery'
         _: benv.require 'underscore'
         Backbone: benv.require 'backbone'
 
-      @Queue = benv.require '../../app/collections/queue'
-      @Queue.__set__ 'actionTemplate', -> '<div>foobar</div>'
+      @Queue = require '../../app/collections/queue'
+      @Queue::actionTemplate = -> '<div>foobar</div>'
 
       @Action = require '../../app/models/action'
 
       done()
 
-  afterEach (done) ->
+  after ->
     benv.teardown()
-    done()
 
   describe 'defaults', ->
     it 'has them', ->
-      @queue = new Queue
+      @queue = new @Queue
       @queue.options.insertIndex.should.equal 2
       @queue.options.maxLength.should.equal 100
 
     it 'they can be overwritten', ->
-      @queue = new Queue null, insertIndex: 3, maxLength: 20
+      @queue = new @Queue null, insertIndex: 3, maxLength: 20
       @queue.options.insertIndex.should.equal 3
       @queue.options.maxLength.should.equal 20
 
   describe 'behavior', ->
     describe '#oldest', ->
       it 'returns the oldest item in the collection', ->
-        @queue = new Queue _.shuffle(feedResponse.items)
+        @queue = new @Queue _.shuffle(feedResponse.items)
         oldest = @queue.oldest()
         oldest.id.should.equal '53122997ebad6416c2000824'
         @queue.remove oldest
@@ -42,7 +42,7 @@ describe 'Queue', ->
         oldest.id.should.equal '531229b8ebad6416c2000825'
 
     it 'enforces maxLength', ->
-      @queue = new Queue null, maxLength: 5
+      @queue = new @Queue null, maxLength: 5
       @queue.add _.first(feedResponse.items, 5)
       feedResponse.items.length.should.equal 10
       @queue.length.should.equal 5
@@ -56,7 +56,7 @@ describe 'Queue', ->
 
     describe '#guardedRender', ->
       it 'renders the action if the action is not rendered yet', ->
-        action = new Action feedResponse.items[0]
+        action = new @Action feedResponse.items[0]
         @queue.guardedRender [action]
         action.get('rendered').should.be.ok
         action.set 'fragment', 'canary'
